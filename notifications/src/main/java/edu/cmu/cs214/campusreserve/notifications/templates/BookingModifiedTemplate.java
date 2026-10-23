@@ -8,7 +8,8 @@ public final class BookingModifiedTemplate extends TextMessageTemplate {
     private static final String BODY = """
         Hi {name},
 
-        Your booking of room {roomId} changed from {previousWhen} to {when}.
+        Your booking of room {roomId} changed from {previousWhen} for {previousAttendees} attendee(s)
+        to {when} for {attendees} attendee(s).
         The booking number is {bookingId}.
         """;
 

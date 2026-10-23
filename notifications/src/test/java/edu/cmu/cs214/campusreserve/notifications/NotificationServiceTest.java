@@ -68,6 +68,8 @@ class NotificationServiceTest {
             assertEquals(NotificationKind.BOOKING_MODIFIED, notification.kind());
             assertTrue(notification.body().contains("2026-10-20 10:00 to 11:00 UTC"));
             assertTrue(notification.body().contains("2026-10-20 10:15 to 11:15 UTC"));
+            assertTrue(notification.body().contains("for 4 attendee(s)"));
+            assertTrue(notification.body().contains("for 5 attendee(s)"));
         }
 
         @Test

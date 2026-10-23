@@ -41,6 +41,10 @@ pytest
 `SETUP.md` has the per-module gate commands, the expected test counts, and what
 green looks like.
 
+## Lab attribution
+
+Implemented with Codex using GPT-5.
+
 ## Running it
 
 Compile once, then run either entry point straight off the class files. There is

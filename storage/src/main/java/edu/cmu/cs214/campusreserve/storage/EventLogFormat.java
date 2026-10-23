@@ -16,7 +16,8 @@ import java.util.Objects;
  *
  * <p>Every line carries the same core fields, in this order:
  * {@code event, occurredAt, bookingId, roomId, userId, start, end, attendees}.
- * Promotions add the entry they came from. Instants are ISO-8601 in UTC.
+ * Promotions add the entry they came from, and modifications add the previous
+ * interval and attendee count. Instants are ISO-8601 in UTC.
  */
 public final class EventLogFormat {
 

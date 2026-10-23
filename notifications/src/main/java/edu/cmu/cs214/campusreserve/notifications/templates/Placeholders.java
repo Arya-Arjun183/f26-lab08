@@ -27,6 +27,9 @@ public final class Placeholders {
     /** How many people the booking is for. */
     public static final String ATTENDEES = "attendees";
 
+    /** How many people the booking was for before a modification. */
+    public static final String PREVIOUS_ATTENDEES = "previousAttendees";
+
     /** Where the entry sat on the waiting list before it was promoted. */
     public static final String POSITION = "position";
 

@@ -119,13 +119,23 @@ BookingsHandler                  BookCommand
    Entries whose slot has passed, or whose room has left service, are dropped.
 4. Each promotion stores a `Booking` and publishes a `waitlist-promoted` event.
 
+### Modifying a booking
+
+An owner may change an upcoming booking's interval or attendee count without
+releasing the booking first. `BookingService` re-runs the request rules and the
+room and user conflict checks while excluding that booking itself; the booking
+keeps immutable history entries. An interval change then performs the same FIFO
+waitlist promotion pass as cancellation. A successful non-no-op change publishes
+`booking-modified`; an attendee-only change does not promote anyone.
+
 ## The event log
 
 `storage` owns the log. `EventLogFormat` is the one place a line's shape is
 decided, and it writes JSON by hand. The event types, currently three, are
 declared in `core-domain` (`BookingCreatedEvent`, `BookingCancelledEvent`,
-`WaitlistPromotedEvent`) and their wire names are `booking-created`,
-`booking-cancelled`, and `waitlist-promoted`.
+`BookingModifiedEvent`, `WaitlistPromotedEvent`) and their wire names are
+`booking-created`, `booking-cancelled`, `booking-modified`, and
+`waitlist-promoted`.
 
 Two writers ship:
 
@@ -173,6 +183,7 @@ parameters, which is why nothing in this platform parses JSON.
 | POST | `/bookings` | bearer token |
 | GET | `/bookings` | bearer token |
 | GET | `/bookings/{bookingId}` | owner or administrator |
+| PATCH | `/bookings/{bookingId}` | owner |
 | DELETE | `/bookings/{bookingId}` | owner |
 | GET | `/waitlist` | bearer token |
 | DELETE | `/waitlist/{entryId}` | owner |
