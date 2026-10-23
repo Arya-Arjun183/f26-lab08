@@ -282,6 +282,25 @@ class EndpointTest {
             assertTrue(api.get("/bookings", ada).body().contains("\"count\":0"));
             assertTrue(api.get("/bookings?includeCancelled=yes", ada).body().contains("\"count\":1"));
         }
+
+        @Test
+        void ownerCanPatchABookingAndSeeItsHistory() {
+            String id = bookAndGetId("roomId=r-1&" + ApiTestServer.slot("10:00", 60), ada);
+            HttpResponse<String> response = api.method("PATCH", "/bookings/" + id,
+                ApiTestServer.slot("10:15", 60) + "&attendees=2", ada);
+            assertEquals(Status.OK, response.statusCode(), response.body());
+            assertTrue(response.body().contains("\"outcome\":\"modified\""));
+            assertTrue(response.body().contains("\"modificationHistory\":[{"));
+            assertTrue(api.get("/bookings/" + id, admin).body().contains("\"previousAttendees\":1"));
+        }
+
+        @Test
+        void onlyTheOwnerCanPatchABooking() {
+            String id = bookAndGetId("roomId=r-1&" + ApiTestServer.slot("10:00", 60), ada);
+            HttpResponse<String> response = api.method("PATCH", "/bookings/" + id,
+                ApiTestServer.slot("10:15", 60), blake);
+            assertEquals(Status.FORBIDDEN, response.statusCode());
+        }
     }
 
     @Nested

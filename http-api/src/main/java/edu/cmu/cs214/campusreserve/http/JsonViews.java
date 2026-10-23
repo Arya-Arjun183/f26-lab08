@@ -1,6 +1,7 @@
 package edu.cmu.cs214.campusreserve.http;
 
 import edu.cmu.cs214.campusreserve.core.domain.Booking;
+import edu.cmu.cs214.campusreserve.core.domain.BookingModification;
 import edu.cmu.cs214.campusreserve.core.domain.CancellationResult;
 import edu.cmu.cs214.campusreserve.core.domain.Room;
 import edu.cmu.cs214.campusreserve.core.domain.TimeInterval;
@@ -40,7 +41,18 @@ public final class JsonViews {
             .field("minutes", booking.durationMinutes())
             .field("attendees", booking.attendees())
             .field("status", booking.status().name())
-            .field("createdAt", booking.createdAt().toString());
+            .field("createdAt", booking.createdAt().toString())
+            .field("modificationHistory", JsonArray.of(booking.modificationHistory(), JsonViews::modification));
+    }
+
+    /** One prior state retained on a booking. */
+    public static JsonObject modification(BookingModification change) {
+        return JsonObject.create()
+            .field("previousInterval", interval(change.previousInterval()))
+            .field("previousAttendees", change.previousAttendees())
+            .field("newInterval", interval(change.newInterval()))
+            .field("newAttendees", change.newAttendees())
+            .field("modifiedAt", change.modifiedAt().toString());
     }
 
     /** A waitlist entry, with its arrival number. */

@@ -72,6 +72,11 @@ public final class Router {
         return add("POST", pattern, handler);
     }
 
+    /** Registers a PATCH route. */
+    public Router patch(String pattern, ApiHandler handler) {
+        return add("PATCH", pattern, handler);
+    }
+
     /** Registers a DELETE route. */
     public Router delete(String pattern, ApiHandler handler) {
         return add("DELETE", pattern, handler);

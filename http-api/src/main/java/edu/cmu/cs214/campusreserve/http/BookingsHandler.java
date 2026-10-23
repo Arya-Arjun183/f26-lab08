@@ -5,6 +5,8 @@ import edu.cmu.cs214.campusreserve.core.domain.Booking;
 import edu.cmu.cs214.campusreserve.core.domain.BookingOutcome;
 import edu.cmu.cs214.campusreserve.core.domain.BookingRequest;
 import edu.cmu.cs214.campusreserve.core.domain.CancellationResult;
+import edu.cmu.cs214.campusreserve.core.domain.BookingModificationRequest;
+import edu.cmu.cs214.campusreserve.core.domain.ModificationResult;
 import edu.cmu.cs214.campusreserve.core.service.BookingService;
 import java.util.List;
 import java.util.Objects;
@@ -41,6 +43,7 @@ public final class BookingsHandler {
         router.post("/bookings", this::create);
         router.get("/bookings", this::list);
         router.get("/bookings/{bookingId}", this::show);
+        router.patch("/bookings/{bookingId}", this::modify);
         router.delete("/bookings/{bookingId}", this::cancel);
     }
 
@@ -107,6 +110,33 @@ public final class BookingsHandler {
         return ApiResponse.ok(JsonObject.create()
             .field("booking", JsonViews.booking(cancelled.booking()))
             .field("promotions", JsonArray.of(cancelled.promotions(), JsonViews::promotion)));
+    }
+
+    /** Changes an upcoming booking for its owner. */
+    public ApiResponse modify(RequestContext request) {
+        String bookingId = request.pathParam("bookingId");
+        Account account = auth.require(request);
+        Booking stored = bookings.findBooking(bookingId)
+            .orElseThrow(() -> ApiException.notFound("No booking with id " + bookingId));
+        int attendees = request.intParam("attendees", stored.attendees());
+        if (attendees <= 0) {
+            throw ApiException.badRequest("attendees must be positive, got " + attendees);
+        }
+        ModificationResult result = bookings.modifyBooking(new BookingModificationRequest(
+            bookingId, account.userId(), request.param("start").isPresent() ? request.requireInterval() : stored.interval(), attendees));
+        if (result instanceof ModificationResult.Rejected rejected) {
+            throw ApiException.of(rejected.reason());
+        }
+        if (result instanceof ModificationResult.Unchanged unchanged) {
+            return ApiResponse.ok(JsonObject.create()
+                .field("outcome", "unchanged")
+                .field("booking", JsonViews.booking(unchanged.booking())));
+        }
+        ModificationResult.Modified modified = (ModificationResult.Modified) result;
+        return ApiResponse.ok(JsonObject.create()
+            .field("outcome", "modified")
+            .field("booking", JsonViews.booking(modified.booking()))
+            .field("promotions", JsonArray.of(modified.promotions(), JsonViews::promotion)));
     }
 
     /** Where an entry sits in the room's queue, counting from one. */
