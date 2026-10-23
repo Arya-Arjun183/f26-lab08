@@ -52,6 +52,19 @@ class BookingServiceModifyTest extends BookingServiceTestBase {
     }
 
     @Test
+    void noOpStillSucceedsWhenTheRoomWasTakenOutOfServiceAfterBooking() {
+        String id = bookAndGetId("r-1", "u-1", Fixtures.interval("10:00", "11:00"));
+        rooms.save(rooms.findById("r-1").orElseThrow().withActive(false));
+
+        ModificationResult result = service.modifyBooking(new BookingModificationRequest(
+            id, "u-1", Fixtures.interval("10:00", "11:00"), 4));
+
+        assertTrue(result.isUnchanged());
+        assertTrue(result.modifiedBooking().orElseThrow().modificationHistory().isEmpty());
+        assertEquals(List.of("booking-created"), publisher.types());
+    }
+
+    @Test
     void shorteningPromotesTheFirstWaiterForFreedTime() {
         String id = bookAndGetId("r-1", "u-1", Fixtures.interval("10:00", "12:00"));
         BookingOutcome waitlisted = book("r-1", "u-2", Fixtures.interval("11:00", "12:00"));

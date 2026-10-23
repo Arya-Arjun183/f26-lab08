@@ -166,6 +166,9 @@ public final class BookingService {
         if (permission.isPresent()) {
             return ModificationResult.rejected(permission.get());
         }
+        if (previous.interval().equals(request.interval()) && previous.attendees() == request.attendees()) {
+            return new ModificationResult.Unchanged(previous);
+        }
         Optional<Room> room = rooms.findById(previous.roomId());
         if (room.isEmpty()) {
             return ModificationResult.rejected(RejectionReason.ROOM_NOT_FOUND);
@@ -180,9 +183,6 @@ public final class BookingService {
         }
         if (conflictChecker.hasConflictExcept(bookings.findActiveByUser(previous.userId()), request.interval(), previous.id())) {
             return ModificationResult.rejected(RejectionReason.USER_DOUBLE_BOOKED);
-        }
-        if (previous.interval().equals(request.interval()) && previous.attendees() == request.attendees()) {
-            return new ModificationResult.Unchanged(previous);
         }
         Booking modified = previous.modified(request.interval(), request.attendees(), now());
         bookings.save(modified);
