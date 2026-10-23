@@ -122,6 +122,11 @@ public final class BookingRules {
         return Optional.empty();
     }
 
+    /** May {@code requesterId} change {@code booking} right now? */
+    public Optional<RejectionReason> checkModifiable(Booking booking, String requesterId) {
+        return checkCancellable(booking, requesterId);
+    }
+
     /** Is the booking still in the future? */
     public boolean isUpcoming(Booking booking) {
         return !booking.hasStartedBy(now());

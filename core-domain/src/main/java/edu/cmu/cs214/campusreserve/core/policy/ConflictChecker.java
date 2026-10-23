@@ -25,6 +25,14 @@ public final class ConflictChecker {
         return firstConflict(existing, candidate).isPresent();
     }
 
+    /** Does a different booking conflict with the candidate interval? */
+    public boolean hasConflictExcept(Collection<Booking> existing, TimeInterval candidate, String excludedBookingId) {
+        Objects.requireNonNull(excludedBookingId, "excludedBookingId");
+        return existing.stream()
+            .filter(booking -> !booking.id().equals(excludedBookingId))
+            .anyMatch(booking -> booking.holdsRoom() && booking.interval().overlaps(candidate));
+    }
+
     /** The earliest booking that collides with {@code candidate}, if there is one. */
     public Optional<Booking> firstConflict(Collection<Booking> existing, TimeInterval candidate) {
         Objects.requireNonNull(existing, "existing");

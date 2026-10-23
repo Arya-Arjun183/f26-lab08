@@ -2,14 +2,17 @@ package edu.cmu.cs214.campusreserve.core.service;
 
 import edu.cmu.cs214.campusreserve.core.domain.Booking;
 import edu.cmu.cs214.campusreserve.core.domain.BookingOutcome;
+import edu.cmu.cs214.campusreserve.core.domain.BookingModificationRequest;
 import edu.cmu.cs214.campusreserve.core.domain.BookingRequest;
 import edu.cmu.cs214.campusreserve.core.domain.CancellationResult;
+import edu.cmu.cs214.campusreserve.core.domain.ModificationResult;
 import edu.cmu.cs214.campusreserve.core.domain.RejectionReason;
 import edu.cmu.cs214.campusreserve.core.domain.Room;
 import edu.cmu.cs214.campusreserve.core.domain.TimeInterval;
 import edu.cmu.cs214.campusreserve.core.domain.WaitlistEntry;
 import edu.cmu.cs214.campusreserve.core.events.BookingCancelledEvent;
 import edu.cmu.cs214.campusreserve.core.events.BookingCreatedEvent;
+import edu.cmu.cs214.campusreserve.core.events.BookingModifiedEvent;
 import edu.cmu.cs214.campusreserve.core.events.DomainEvent;
 import edu.cmu.cs214.campusreserve.core.events.WaitlistPromotedEvent;
 import edu.cmu.cs214.campusreserve.core.policy.BookingPolicy;
@@ -149,6 +152,44 @@ public final class BookingService {
 
         List<CancellationResult.Promotion> promotions = promoteWaitlist(cancelled.roomId());
         return new CancellationResult.Cancelled(cancelled, promotions);
+    }
+
+    /** Changes an upcoming owner's booking without giving its original slot away. */
+    public ModificationResult modifyBooking(BookingModificationRequest request) {
+        Objects.requireNonNull(request, "request");
+        Optional<Booking> stored = bookings.findById(request.bookingId());
+        if (stored.isEmpty()) {
+            return ModificationResult.rejected(RejectionReason.BOOKING_NOT_FOUND);
+        }
+        Booking previous = stored.get();
+        Optional<RejectionReason> permission = rules.checkModifiable(previous, request.requesterId());
+        if (permission.isPresent()) {
+            return ModificationResult.rejected(permission.get());
+        }
+        Optional<Room> room = rooms.findById(previous.roomId());
+        if (room.isEmpty()) {
+            return ModificationResult.rejected(RejectionReason.ROOM_NOT_FOUND);
+        }
+        BookingRequest proposed = BookingRequest.of(previous.roomId(), previous.userId(), request.interval(), request.attendees());
+        Optional<RejectionReason> ruleFailure = rules.checkRequest(proposed, room.get());
+        if (ruleFailure.isPresent()) {
+            return ModificationResult.rejected(ruleFailure.get());
+        }
+        if (conflictChecker.hasConflictExcept(bookings.findActiveByRoom(previous.roomId()), request.interval(), previous.id())) {
+            return ModificationResult.rejected(RejectionReason.ROOM_UNAVAILABLE);
+        }
+        if (conflictChecker.hasConflictExcept(bookings.findActiveByUser(previous.userId()), request.interval(), previous.id())) {
+            return ModificationResult.rejected(RejectionReason.USER_DOUBLE_BOOKED);
+        }
+        if (previous.interval().equals(request.interval()) && previous.attendees() == request.attendees()) {
+            return new ModificationResult.Unchanged(previous);
+        }
+        Booking modified = previous.modified(request.interval(), request.attendees(), now());
+        bookings.save(modified);
+        publish(BookingModifiedEvent.of(previous, modified, now()));
+        List<CancellationResult.Promotion> promotions = previous.interval().equals(request.interval())
+            ? List.of() : promoteWaitlist(previous.roomId());
+        return new ModificationResult.Modified(previous, modified, promotions);
     }
 
     /**

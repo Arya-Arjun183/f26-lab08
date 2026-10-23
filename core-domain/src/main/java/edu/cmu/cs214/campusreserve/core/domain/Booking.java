@@ -1,6 +1,8 @@
 package edu.cmu.cs214.campusreserve.core.domain;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -16,7 +18,8 @@ public record Booking(
     TimeInterval interval,
     int attendees,
     BookingStatus status,
-    Instant createdAt) {
+    Instant createdAt,
+    List<BookingModification> modificationHistory) {
 
     public Booking {
         id = Identifiers.require(id, "booking id");
@@ -25,6 +28,7 @@ public record Booking(
         Objects.requireNonNull(interval, "interval");
         Objects.requireNonNull(status, "status");
         Objects.requireNonNull(createdAt, "createdAt");
+        modificationHistory = List.copyOf(modificationHistory);
         if (attendees <= 0) {
             throw new IllegalArgumentException("Attendees must be positive: " + attendees);
         }
@@ -33,12 +37,19 @@ public record Booking(
     /** Builds a confirmed booking. */
     public static Booking confirmed(
         String id, String roomId, String userId, TimeInterval interval, int attendees, Instant createdAt) {
-        return new Booking(id, roomId, userId, interval, attendees, BookingStatus.CONFIRMED, createdAt);
+        return new Booking(id, roomId, userId, interval, attendees, BookingStatus.CONFIRMED, createdAt, List.of());
     }
 
     /** Returns a cancelled copy of this booking. */
     public Booking cancelled() {
-        return new Booking(id, roomId, userId, interval, attendees, BookingStatus.CANCELLED, createdAt);
+        return new Booking(id, roomId, userId, interval, attendees, BookingStatus.CANCELLED, createdAt, modificationHistory);
+    }
+
+    /** Returns a confirmed copy with one immutable history entry appended. */
+    public Booking modified(TimeInterval newInterval, int newAttendees, Instant modifiedAt) {
+        List<BookingModification> history = new ArrayList<>(modificationHistory);
+        history.add(new BookingModification(interval, attendees, newInterval, newAttendees, modifiedAt));
+        return new Booking(id, roomId, userId, newInterval, newAttendees, status, createdAt, history);
     }
 
     /** Does this booking still hold the room? */
