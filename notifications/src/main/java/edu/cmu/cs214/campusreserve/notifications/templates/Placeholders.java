@@ -21,6 +21,9 @@ public final class Placeholders {
     /** The booked interval, already written out for a person to read. */
     public static final String WHEN = "when";
 
+    /** The interval a booking held before a modification. */
+    public static final String PREVIOUS_WHEN = "previousWhen";
+
     /** How many people the booking is for. */
     public static final String ATTENDEES = "attendees";
 

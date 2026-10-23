@@ -9,6 +9,7 @@ import pytest
 from campusreserve_analytics.events import (
     BOOKING_CANCELLED,
     BOOKING_CREATED,
+    BOOKING_MODIFIED,
     KNOWN_EVENT_TYPES,
     WAITLIST_PROMOTED,
     EventLogError,
@@ -192,6 +193,16 @@ class TestBuildLedger:
         assert ledger.bookings["bk-9"].is_cancelled
         assert ledger.bookings["bk-9"].from_waitlist
 
+    def test_a_modification_updates_the_current_interval_for_reports(self):
+        ledger = ledger_from_lines(
+            make_line(booking_id="bk-9", start="2026-10-20T10:00:00Z", end="2026-10-20T11:00:00Z"),
+            make_line(event=BOOKING_MODIFIED, booking_id="bk-9", start="2026-10-20T10:15:00Z",
+                      end="2026-10-20T11:45:00Z", attendees=5),
+        )
+        record = ledger.bookings["bk-9"]
+        assert record.duration_minutes == 90
+        assert record.attendees == 5
+
     def test_an_empty_log_gives_an_empty_ledger(self, fixture_dir):
         ledger = load_ledger(fixture_dir / "events-empty.jsonl")
         assert len(ledger) == 0
@@ -205,4 +216,5 @@ class TestBuildLedger:
 def test_the_known_event_types_cover_what_the_platform_writes():
     assert "booking-created" in KNOWN_EVENT_TYPES
     assert "booking-cancelled" in KNOWN_EVENT_TYPES
+    assert "booking-modified" in KNOWN_EVENT_TYPES
     assert "waitlist-promoted" in KNOWN_EVENT_TYPES

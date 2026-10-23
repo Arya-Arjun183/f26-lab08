@@ -8,6 +8,7 @@ import edu.cmu.cs214.campusreserve.core.domain.User;
 import edu.cmu.cs214.campusreserve.core.domain.WaitlistEntry;
 import edu.cmu.cs214.campusreserve.core.events.BookingCancelledEvent;
 import edu.cmu.cs214.campusreserve.core.events.BookingCreatedEvent;
+import edu.cmu.cs214.campusreserve.core.events.BookingModifiedEvent;
 import edu.cmu.cs214.campusreserve.core.events.WaitlistPromotedEvent;
 import java.time.Instant;
 
@@ -50,6 +51,11 @@ final class StorageFixtures {
 
     static BookingCancelledEvent cancelled(String bookingId) {
         return BookingCancelledEvent.of(booking(bookingId, "r-1", "u-1", "10:00", "11:00"), NOW);
+    }
+
+    static BookingModifiedEvent modified(String bookingId) {
+        Booking previous = booking(bookingId, "r-1", "u-1", "10:00", "11:00");
+        return BookingModifiedEvent.of(previous, previous.modified(interval("10:15", "11:15"), 5, NOW), NOW);
     }
 
     static WaitlistPromotedEvent promoted(String bookingId, String entryId, long sequence) {

@@ -4,6 +4,7 @@ import edu.cmu.cs214.campusreserve.core.domain.Booking;
 import edu.cmu.cs214.campusreserve.core.domain.TimeInterval;
 import edu.cmu.cs214.campusreserve.core.events.BookingCancelledEvent;
 import edu.cmu.cs214.campusreserve.core.events.BookingCreatedEvent;
+import edu.cmu.cs214.campusreserve.core.events.BookingModifiedEvent;
 import edu.cmu.cs214.campusreserve.core.events.WaitlistPromotedEvent;
 import edu.cmu.cs214.campusreserve.notifications.Channel;
 import edu.cmu.cs214.campusreserve.notifications.InMemoryUserDirectory;
@@ -58,6 +59,14 @@ public final class Fixtures {
     /** The event for a booking that just gave its room back. */
     public static BookingCancelledEvent cancelled() {
         return BookingCancelledEvent.of(booking(), NOW);
+    }
+
+    /** The event for a booking whose time and attendance changed. */
+    public static BookingModifiedEvent modified() {
+        Booking previous = booking();
+        Booking modified = previous.modified(
+            TimeInterval.parse("2026-10-20T10:15:00Z", "2026-10-20T11:15:00Z"), 5, NOW);
+        return BookingModifiedEvent.of(previous, modified, NOW);
     }
 
     /** The event for a waiting-list entry that became a booking. */

@@ -62,6 +62,15 @@ class NotificationServiceTest {
         }
 
         @Test
+        void aModificationNamesBothTheOldAndNewDetails() {
+            service.publish(Fixtures.modified());
+            Notification notification = outbox.peek().orElseThrow();
+            assertEquals(NotificationKind.BOOKING_MODIFIED, notification.kind());
+            assertTrue(notification.body().contains("2026-10-20 10:00 to 11:00 UTC"));
+            assertTrue(notification.body().contains("2026-10-20 10:15 to 11:15 UTC"));
+        }
+
+        @Test
         void everyMessageIsStampedFromTheInjectedClockAndGetsItsOwnId() {
             service.publish(Fixtures.created());
             clock.advanceMinutes(30);

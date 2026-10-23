@@ -2,6 +2,7 @@ package edu.cmu.cs214.campusreserve.storage;
 
 import edu.cmu.cs214.campusreserve.core.events.BookingCancelledEvent;
 import edu.cmu.cs214.campusreserve.core.events.BookingCreatedEvent;
+import edu.cmu.cs214.campusreserve.core.events.BookingModifiedEvent;
 import edu.cmu.cs214.campusreserve.core.events.DomainEvent;
 import edu.cmu.cs214.campusreserve.core.events.WaitlistPromotedEvent;
 import java.util.Objects;
@@ -39,6 +40,11 @@ public final class EventLogFormat {
             line.field("waitlistEntryId", promoted.waitlistEntryId())
                 .field("waitlistSequence", promoted.waitlistSequence());
         }
+        if (event instanceof BookingModifiedEvent modified) {
+            line.field("previousStart", modified.previousInterval().start().toString())
+                .field("previousEnd", modified.previousInterval().end().toString())
+                .field("previousAttendees", modified.previousAttendees());
+        }
         return line.build();
     }
 
@@ -47,6 +53,7 @@ public final class EventLogFormat {
         return new String[] {
             BookingCreatedEvent.TYPE,
             BookingCancelledEvent.TYPE,
+            BookingModifiedEvent.TYPE,
             WaitlistPromotedEvent.TYPE,
         };
     }

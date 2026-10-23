@@ -122,6 +122,15 @@ class EventLogTest {
         }
 
         @Test
+        void modificationsCarryBothTheOldAndNewDetails() {
+            String line = EventLogFormat.toLine(StorageFixtures.modified("bk-1"));
+            assertTrue(line.contains("\"event\":\"booking-modified\""));
+            assertTrue(line.contains("\"start\":\"2026-10-20T10:15:00Z\""));
+            assertTrue(line.contains("\"previousStart\":\"2026-10-20T10:00:00Z\""));
+            assertTrue(line.contains("\"previousAttendees\":4"));
+        }
+
+        @Test
         void everyLineIsOneLine() {
             for (DomainEvent event : List.of(
                 StorageFixtures.created("bk-1"),
@@ -136,6 +145,7 @@ class EventLogTest {
             List<String> declared = List.of(EventLogFormat.eventTypes());
             assertTrue(declared.contains("booking-created"));
             assertTrue(declared.contains("booking-cancelled"));
+            assertTrue(declared.contains("booking-modified"));
             assertTrue(declared.contains("waitlist-promoted"));
             assertTrue(EventLogFormat.isKnownType("booking-created"));
             assertFalse(EventLogFormat.isKnownType("booking-invented"));

@@ -23,10 +23,11 @@ from typing import Iterable, Iterator, Mapping, Sequence
 
 BOOKING_CREATED = "booking-created"
 BOOKING_CANCELLED = "booking-cancelled"
+BOOKING_MODIFIED = "booking-modified"
 WAITLIST_PROMOTED = "waitlist-promoted"
 
 #: The event types the platform writes, in the order it declares them.
-KNOWN_EVENT_TYPES = (BOOKING_CREATED, BOOKING_CANCELLED, WAITLIST_PROMOTED)
+KNOWN_EVENT_TYPES = (BOOKING_CREATED, BOOKING_CANCELLED, BOOKING_MODIFIED, WAITLIST_PROMOTED)
 
 #: Event types that put a booking on a room's calendar.
 HOLDING_EVENT_TYPES = (BOOKING_CREATED, WAITLIST_PROMOTED)
@@ -302,6 +303,12 @@ def build_ledger(events: Sequence[Event]) -> Ledger:
                 ledger.cancellations_without_a_booking.append(event.booking_id)
             else:
                 record.cancelled_at = event.occurred_at
+        elif event.event_type == BOOKING_MODIFIED:
+            record = ledger.bookings.get(event.booking_id)
+            if record is not None:
+                record.start = event.start
+                record.end = event.end
+                record.attendees = event.attendees
 
     return ledger
 
