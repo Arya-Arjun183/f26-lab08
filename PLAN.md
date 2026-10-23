@@ -89,6 +89,12 @@ one line on what it cannot catch.
 you asked it to do, its tool call, and the block the guardrail returned. A bare
 terminal paste with no agent turn around it does not show the boundary binding.
 
+Captured during the implementation run: I asked Codex to add a harmless comment
+to `billing/src/main/java/edu/cmu/cs214/campusreserve/billing/Money.java` while
+the lock was active. Its `apply_patch` call was blocked with: `Failed to write
+file .../billing/src/main/java/edu/cmu/cs214/campusreserve/billing/Money.java`.
+The file was unchanged; the operating system denied the write.
+
 **The recipe.** Recipe C, filesystem lockdown, protects `accounts`, `billing`,
 and `cli`: their `src/` trees and Maven poms are made read-only with
 `guardrails/lockdown.sh` before the implementation run. It cannot catch an
@@ -129,3 +135,29 @@ up, say how you checked its strongest claim.
 and end values outside `TimeInterval.overlaps`/`ConflictChecker`, or invokes
 `WaitlistStore.save` or `.remove` outside `BookingService`, I stop the run and
 repair that code directly before continuing.
+
+**The evidence.** I ran task 1, “Modify a held booking in the domain,” with the
+filesystem lock active. Its closing module gate was `mvn -B -pl core-domain -am
+test`: `Tests run: 173, Failures: 0, Errors: 0, Skipped: 0` and `BUILD SUCCESS`.
+The closing cold build was `mvn -B clean test`: `BUILD SUCCESS` (all eight Maven
+modules), followed by `cd analytics && pytest`: `138 passed`.
+
+**The diff.** `git show --stat 994b2ac` lists only `PLAN.md`, the guardrail list,
+and core-domain production/test files. The core-domain files implement the
+declared request/result/history/event/service scope; no shipped test was edited.
+The line I read hardest was `conflictChecker.hasConflictExcept(..., previous.id())`:
+I checked that moving a booking cannot treat itself as a collision and that the
+only interval comparison remains inside `ConflictChecker`/`TimeInterval`.
+
+**The refuter.** Brief supplied to a fresh agent: “Given only
+`CHANGE-REQUEST.md`, `git show 994b2ac`, and the scope ‘Modify a held booking in
+core-domain: rules/conflict self-exclusion/history/event/waitlist promotion’,
+find concrete inputs or call sequences where it violates the request; do not
+edit files.” It found that an exact no-op was rejected if the room was later
+deactivated, because rules ran before no-op detection. I settled it as valid by
+adding `noOpStillSucceedsWhenTheRoomWasTakenOutOfServiceAfterBooking` in an
+isolated checkout of pre-fix commit `0ff08db`; it produced a red run with
+`Tests run: 6, Failures: 1` and the expected failed assertion. I then moved
+no-op detection before room/rule validation. The repaired core-domain gate is
+the 173-test green result above; the regression test and fix are commit
+`a98ce69`.
